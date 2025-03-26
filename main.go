@@ -41,89 +41,104 @@ func main() {
 		}
 
 		var varNames []string
-		for varName, _ := range lib.Variables {
+		for varName := range lib.Variables {
 			varNames = append(varNames, varName)
 		}
 		sort.Strings(varNames)
 
-		//print out the library
-		f, err := os.Create(folderPath + "/" + "LibPivot" + ".csv")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-
-		writer := csv.NewWriter(f)
-
-		header := []string{"Name", "Description"}
-		for _, repo := range run.CodeRepo {
-			prodName, _ := utils.FilePathToName(repo)
-			header = append(header, prodName, prodName)
-		}
-
-		err = writer.Write(header)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, varName := range varNames {
-			row := []string{varName}
-			varMap := lib.Variables[varName]
-			defnMap := make(map[string]string)
-			for i, repo := range run.CodeRepo {
-				prodName, _ := utils.FilePathToName(repo)
-				prodPath := folderPath + "/" + prodName
-
-				definition, ok := varMap[prodName]
-				cat := definition.Cat
-				defnType := api.LookupIdent(definition.Type)
-				defn := ""
-
-				if !ok {
-					defn = ""
-				} else {
-					defn = definition.Defn
-					mdFile, err := os.Create(prodPath + "/" + varName + ".md")
-					if err != nil {
-						panic(err)
-					}
-
-					mdFile.WriteString(varName + "\n")
-					mdFile.WriteString("\n")
-					mdFile.WriteString(cat + " " + defnType + " Definition" + "\n")
-					mdFile.WriteString("```" + "\n")
-					mdFile.WriteString(definition.Defn + "\n")
-					mdFile.WriteString("```" + "\n")
-					mdFile.WriteString("\n")
-					mdFile.Close()
-				}
-
-				if sameAsProd, exists := defnMap[defn]; exists {
-					defn = fmt.Sprintf("Same as %s", sameAsProd)
-				} else {
-					if defn != "" {
-						defnMap[defn] = prodName
-					}
-				}
-
-				if i == 0 {
-					row = append(row, varMap[prodName].Desc)
-				}
-				if defnType == "Extended Formula" {
-					defn = "Extended Formula"
-				} else if defnType == "t-Dependent Extended Formula" {
-					defn = "t-Dependent Extended Formula"
-				}
-				row = append(row, cat, defn)
-			}
-			err = writer.Write(row)
-		}
-		writer.Flush()
+		// Write library to CSV
+		writeLibraryToCSV(folderPath, run, lib, varNames)
 	}
+
 	//logging
 	{
 		elapsed := time.Since(start)
 		fmt.Printf("Product Formula Parser ended and it took %s", elapsed)
 		log.Printf("Product Formula Parser ended and it took %s", elapsed)
 	}
+}
+
+// writeLibraryToCSV writes the library data to a CSV file
+func writeLibraryToCSV(folderPath string, run *conf.Run, lib api.Library, varNames []string) {
+	f, err := os.Create(folderPath + "/" + "LibPivot" + ".csv")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	writer := csv.NewWriter(f)
+
+	header := []string{"Name", "Description"}
+	for _, repo := range run.CodeRepo {
+		prodName, _ := utils.FilePathToName(repo)
+		header = append(header, prodName, prodName)
+	}
+
+	err = writer.Write(header)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, varName := range varNames {
+		row := []string{varName}
+		varMap := lib.Variables[varName]
+		defnMap := make(map[string]string)
+		for i, repo := range run.CodeRepo {
+			prodName, _ := utils.FilePathToName(repo)
+			prodPath := folderPath + "/" + prodName
+
+			definition, ok := varMap[prodName]
+			cat := definition.Cat
+			defnType := api.LookupIdent(definition.Type)
+			defn := ""
+
+			if !ok {
+				defn = ""
+			} else {
+				defn = definition.Defn
+				// Write to markdown
+				writeVariableToMarkdown(prodPath, varName, cat, defnType, defn)
+			}
+
+			if sameAsProd, exists := defnMap[defn]; exists {
+				defn = fmt.Sprintf("Same as %s", sameAsProd)
+			} else {
+				if defn != "" {
+					defnMap[defn] = prodName
+				}
+			}
+
+			if i == 0 {
+				row = append(row, varMap[prodName].Desc)
+			}
+			if defnType == "Extended Formula" {
+				defn = "Extended Formula"
+			} else if defnType == "t-Dependent Extended Formula" {
+				defn = "t-Dependent Extended Formula"
+			}
+			row = append(row, cat, defn)
+		}
+		err = writer.Write(row)
+		if err != nil {
+			panic(err)
+		}
+	}
+	writer.Flush()
+}
+
+// writeVariableToMarkdown creates a markdown file for a variable
+func writeVariableToMarkdown(prodPath string, varName string, cat string, defnType string, defn string) {
+	mdFile, err := os.Create(prodPath + "/" + varName + ".md")
+	if err != nil {
+		panic(err)
+	}
+	defer mdFile.Close()
+
+	mdFile.WriteString(varName + "\n")
+	mdFile.WriteString("\n")
+	mdFile.WriteString(cat + " " + defnType + " Definition" + "\n")
+	mdFile.WriteString("```" + "\n")
+	mdFile.WriteString(defn + "\n")
+	mdFile.WriteString("```" + "\n")
+	mdFile.WriteString("\n")
 }
