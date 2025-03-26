@@ -1,0 +1,35 @@
+# each run instance has
+# ========================================
+# inputs
+inputPaths:
+  - C:\appData\productParser\inputs\CCL_202502\CCL_239_C
+  - C:\appData\productParser\inputs\CCL_202502\CCL_239_S
+  - C:\appData\productParser\inputs\CCL_202502\FFP_20250219_C
+  - C:\appData\productParser\inputs\CCL_202502\FFP_20250219_S
+
+# outputs
+outputPath: C:/appData/productParser/outputs/CCL_202502/v2
+
+# runs
+# ========================================
+runs:
+  - name: PHKL_CCL_C
+    folder: CCL_C
+    codeRepo:
+      - 239_C_CCLH.txt
+      - 239_CPCC__.txt
+  - name: PHKL_CCL_S
+    folder: CCL_S
+    codeRepo:
+      - 239_S_CCLH.txt
+      - 239_S_CCLH_BON.txt
+  - name: PHKL_FFP_C
+    folder: FFP_C
+    codeRepo:
+      - FFP_C__SHB1.txt
+      - FFP_C__SHB2.txt
+  - name: PHKL_FFP_S
+    folder: FFP_S
+    codeRepo:
+      - FFP_S__BON1.txt
+      - FFP_S_CCLH.txt
